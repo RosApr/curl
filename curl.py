@@ -1,32 +1,70 @@
 import re
 import argparse
 import shlex
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Dict, List, Any, Optional
 from urllib.parse import urlparse, parse_qs, urlunparse
+from dataclasses import dataclass
+
+@dataclass
+class ParsedCurlData:
+    url: str
+    params: Optional[Dict[str, Any]] = None
+    headers: Optional[Dict[str, Any]] = None
+    cookies: Optional[Dict[str, Any]] = None
+    data: Optional[str] = str
+    request: str = "GET"
+
+@dataclass
+class CurlParseResult:
+    parsed_data: ParsedCurlData
+    unresolved_data: Dict[str, Any]
 
 """
 cURL 命令解析器
 """
-fetch_unresolved_issue_curl = ''' 
-curl 'http://192.168.30.233:9000/api/issues/search?componentKeys=erdc-mpm&s=FILE_LINE&resolved=false&types=CODE_SMELL&ps=100&facets=owaspTop10%2CsansTop25%2Cseverities%2CsonarsourceSecurity%2Ctypes&additionalFields=_all&timeZone=Asia%2FShanghai' \
-  -H 'Accept: application/json' \
+sample_curl_command = ''' 
+curl 'http://localhost:155/mpm-mix/create?_t=1757053091299_2DaOl' \
+  -H 'Accept: application/json, text/plain, */*' \
   -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6' \
+  -H 'App-Name: MPM' \
+  -H 'Authorization: 4da1519d-1db1-4aac-8c5b-37a0604270f2' \
   -H 'Cache-Control: no-cache' \
   -H 'Connection: keep-alive' \
-  -b 'JSESSIONID.a00803dc=node01krvdwldm6r4gsknfwnl8ghte168.node0; OAUTHSTATE=c9d5187d93f46dbac9986247c8bc679b6ac74b6554aaf618e58c32ea65760311; XSRF-TOKEN=9fjvgao16g98t1ugmfjmuk1dk0; JSESSIONID.65b26541=node01sm1a1rwocuresbz8k0gnbpsh40.node0; JWT-SESSION=eyJhbGciOiJIUzI1NiJ9.eyJsYXN0UmVmcmVzaFRpbWUiOjE3NTY4ODA5NTA3NDksInhzcmZUb2tlbiI6IjlmanZnYW8xNmc5OHQxdWdtZmptdWsxZGswIiwianRpIjoiQVprTm9vTzNBcjNCNnZHQnRySDkiLCJzdWIiOiJBWlJLSndyRFdrQ0VSRWgtem5sTCIsImlhdCI6MTc1Njg3MDM3OCwiZXhwIjoxNzU3MTQwMTUwfQ.v1Cwkw0g-4XmmHpg27YNXc1F5Mrf_VLGZmANIgzqRCI' \
+  -H 'Content-Type: application/json' \
+  -b 'locale=zh-CN' \
+  -H 'Origin: http://localhost:155' \
   -H 'Pragma: no-cache' \
-  -H 'Referer: http://192.168.30.233:9000/project/issues?id=erdc-mpm&resolved=false&sinceLeakPeriod=false&types=CODE_SMELL' \
+  -H 'Referer: http://localhost:155/' \
+  -H 'Sec-Fetch-Dest: empty' \
+  -H 'Sec-Fetch-Mode: cors' \
+  -H 'Sec-Fetch-Site: same-origin' \
+  -H 'Tenant-Id: 10000' \
   -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0' \
-  -H 'X-XSRF-TOKEN: 9fjvgao16g98t1ugmfjmuk1dk0' \
-  --insecure
+  -H 'User-Language: zh_cn' \
+  -H 'X-Requested-With: XMLHttpRequest' \
+  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"' \
+  --data-raw '{"className":"erd.cloud.mpm.process.entity.MpmProcess","attrRawList":[{"attrName":"securityLabel","value":"PUBLIC"},{"attrName":"name","value":"1"},{"attrName":"parentVid","value":"VR:erd.cloud.mpm.process.entity.MpmProcess:1963795750197202944"}],"typeReference":"OR:erd.cloud.foundation.type.entity.TypeDefinition:1764838262922731521","folderRef":"OR:erd.cloud.foundation.core.folder.entity.Cabinet:1961628874755514369","containerRef":"OR:erd.cloud.foundation.core.container.entity.ScalableContainer:1961628874721959938"}'
   '''
 
-curl_options = {
+URL_PATTERN = re.compile(
+    r'^https?://'
+    r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'
+    r'localhost|'
+    r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+    r'(?::\d+)?'
+    r'(?:/?|[/?]\S+)$',
+    re.IGNORECASE
+)
+
+
+resolve_curl_options = {
     "request": ["--request", "-X"],
     "headers": ["--header", "-H"],
     "head": ["--head", "-l"],
     "data": ["--data", "-d", '--data-ascii', '--data-raw'],
-    "form": ["--request", "-F"],
+    "form": ["--form", "-F"],
     "user": ["--user", "-u"],
     "location": ["--location", "-L"],
     "verify": ["--insecure", "-k"],
@@ -35,41 +73,32 @@ curl_options = {
     "verbose": ["--verbose", "-v"],
     "output": ["--output", "-o"],
 }
-formatted_curl_options = {}
-for key, value in curl_options.items():
-    for v in value:
-        formatted_curl_options[v] = key
+def format_curl_options(options: Dict[str, List[str]]) -> Dict[str, str]:
+    """
+    格式化cURL 选项
+    """
+    key_dict = {}
+    for key, value in options.items():
+        for v in value:
+            key_dict[v] = key
+    return key_dict
 
-def parse_curl(curl_command: str) -> bool:
-    default_data = {
-        "request": "GET",
-        "url": None,
-        "headers": None,
-        "data": None,
-        "files": None,
-        "params": None,
-        "cookies": None,
-        "auth": None,
-        "json_data": None,
-        "verify": False,
-        "timeout": None,
-        "proxies": None,
-        "allow_redirects": None
-    }
-    
+curl_key_dict = format_curl_options(resolve_curl_options)
+
+def parse_curl(curl_command: str) -> Optional[CurlParseResult]:
     try:
         grouped_curl_options = group_curl_by_options(curl_command)
         if isinstance(grouped_curl_options, Exception):
             raise grouped_curl_options
         mixed_curl_options = mixin_curl_options(grouped_curl_options)  
-        parsed_data = fill_parse_data(mixed_curl_options, default_data)
-        print(parsed_data)
-        return True
+        parse_result = fill_parse_data(mixed_curl_options)
+        print(parse_result['parsed_data'])
+        return CurlParseResult(parsed_data = parse_result['parsed_data'], unresolved_data = parse_result['unresolved_data'])
     except Exception as e:
         print(f"解析cURL 失败: {e}")
-        return False
+        return None
     
-def parse_common(option_list:List) -> Dict[str, str]:
+def parse_common(option_list: List[str]) -> Dict[str, str]:
     options = {}
     for option in option_list:
         index = option.find(':')
@@ -77,16 +106,16 @@ def parse_common(option_list:List) -> Dict[str, str]:
             options[option[:index].strip()] = option[index+1:].strip()
     return options
 
-def parse_cookie(cookie_list:List) -> Dict[str, str]:
-    cookie = {}
+def parse_cookie(cookie_list:List[str]) -> Dict[str, str]:
+    cookie_dict = {}
     cookie_list = list(map(lambda x: x.split(';'), cookie_list))
-    flatten_cookie_list = list(filter(lambda x: x != '', [item for sub_list in cookie_list for item in sub_list]))
-    for c in flatten_cookie_list:
-        index = c.find('=')
-        cookie[c[:index].strip()] = c[index+1:].strip()
-    return cookie
+    flattened_cookie_list = list(filter(lambda x: x != '', [item for sub_list in cookie_list for item in sub_list]))
+    for cookie_item in flattened_cookie_list:
+        separator_index = cookie_item.find('=')
+        cookie_dict[cookie_item[:separator_index].strip()] = cookie_item[separator_index+1:].strip()
+    return cookie_dict
 
-def parse_url(url: str) -> Dict[str, any]:
+def parse_url(url: str) -> Dict[str, str]:
     parsed_url = urlparse(url)
     params = parse_qs(parsed_url.query) if parsed_url.query else None
     if params:
@@ -99,48 +128,50 @@ def parse_url(url: str) -> Dict[str, any]:
         "params": params
     }
 
-def group_curl_by_options(curl: str) -> Union[List[List[str]], Exception]:
+def group_curl_by_options(curl_command: str) -> Optional[List[List[str]]]:
     try:
-        curl = curl.strip()
-        if curl.startswith('curl'):
-            curl = curl[4:].strip()
-        tokens = shlex.split(curl)
-        i = 0
-        tokenLength = len(tokens)
-        ret = []
-        while(i < tokenLength):
-            token = tokens[i]
-            j = i + 1
-            while(j < tokenLength):
-                innerToken = tokens[j]
-                if innerToken.startswith('-') and innerToken == token or not innerToken.startswith('-'):
-                    j += 1
+        curl_command = curl_command.strip()
+        if curl_command.startswith('curl'):
+            curl_command = curl_command[4:].strip()
+        tokens = shlex.split(curl_command)
+        current_index = 0
+        grouped_options = []
+        token_length = len(tokens)
+        while current_index < token_length:
+            token = tokens[current_index]
+            next_index = current_index + 1
+            while next_index < token_length:
+                next_token = tokens[next_index]
+                if next_token.startswith('-') and next_token == token or not next_token.startswith('-'):
+                    next_index += 1
                 else:
                     break
-            ret.append(list(set(tokens[i:j])))
-            i = j
-        return ret
-    except Exception as e:
-        return e
-def mixin_curl_options(curl_options:List[List[str]]) -> List[Tuple[str, List[str]]]:
-    ret = {}
+            grouped_options.append(list(set(tokens[current_index:next_index])))
+            current_index = next_index
+        return grouped_options
+    except Exception:
+        raise Exception
+def mixin_curl_options(curl_options:List[List[str]]) -> Dict[str, List[str]]:
+    mixed_options = {}
     for option in curl_options:
         if any(o.startswith('-') for o in option):
             key = None
             values = []
             for o in option:
                 if o.startswith('-'):
-                    key = formatted_curl_options[o]
+                    key = curl_key_dict[o]
                 else:
                     values.append(o)
-            if key in ret:
-                ret[key].extend(values)
+            if key in mixed_options:
+                mixed_options[key].extend(values)
             else:
-                ret[key] = values
+                mixed_options[key] = values
+        elif is_valid_url(option[0]):
+            mixed_options['url'] = option
         else:
-            ret['url'] = option
-    return ret
-def fill_parse_data(mixin_options, default_data) -> Dict:
+            mixed_options[option[0]] = option
+    return mixed_options
+def fill_parse_data(mixin_options: Dict[str, List[str]]) -> Dict:
     parsed_data = {}
     unresolved_data = {}
     for key, value in mixin_options.items():
@@ -148,10 +179,25 @@ def fill_parse_data(mixin_options, default_data) -> Dict:
             parsed_data.update(parse_url(value[0]))
         elif key == 'cookies':
             parsed_data['cookies'] = parse_cookie(value)
-        elif len(value) > 0:
+        elif key == 'data':
+            parsed_data[key] = value[0] if value else None
+        elif key == 'headers':
             parsed_data[key] = parse_common(value)
         else:
-            parsed_data[key] = default_data.get(key, True)
-            
-    return {"parsed_data":{**default_data, **parsed_data}, "unresolved_data": unresolved_data}
-parse_curl(fetch_unresolved_issue_curl)
+            if key not in curl_key_dict:
+                unresolved_data[key] = value
+            else:
+                parsed_data[key] = True
+
+    if "data" in parsed_data and "request" not in parsed_data:
+        parsed_data['request'] = 'POST'
+    else:
+        parsed_data['request'] = 'GET'
+    return {"parsed_data": parsed_data, "unresolved_data": unresolved_data}
+
+def is_valid_url(url: str) -> bool:
+    return bool(re.match(URL_PATTERN, url))
+
+
+
+parse_curl(sample_curl_command)
