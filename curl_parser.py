@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
+
 import re
-import argparse
 import shlex
 from typing import Dict, List, Any, Optional
 from urllib.parse import urlparse, parse_qs, urlunparse
@@ -11,7 +12,7 @@ class ParsedCurlData:
     params: Optional[Dict[str, Any]] = None
     headers: Optional[Dict[str, Any]] = None
     cookies: Optional[Dict[str, Any]] = None
-    data: Optional[str] = str
+    data: Optional[str] = None
     request: str = "GET"
 
 @dataclass
@@ -22,31 +23,6 @@ class CurlParseResult:
 """
 cURL 命令解析器
 """
-sample_curl_command = ''' 
-curl 'http://localhost:155/mpm-mix/create?_t=1757053091299_2DaOl' \
-  -H 'Accept: application/json, text/plain, */*' \
-  -H 'Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6' \
-  -H 'App-Name: MPM' \
-  -H 'Authorization: 4da1519d-1db1-4aac-8c5b-37a0604270f2' \
-  -H 'Cache-Control: no-cache' \
-  -H 'Connection: keep-alive' \
-  -H 'Content-Type: application/json' \
-  -b 'locale=zh-CN' \
-  -H 'Origin: http://localhost:155' \
-  -H 'Pragma: no-cache' \
-  -H 'Referer: http://localhost:155/' \
-  -H 'Sec-Fetch-Dest: empty' \
-  -H 'Sec-Fetch-Mode: cors' \
-  -H 'Sec-Fetch-Site: same-origin' \
-  -H 'Tenant-Id: 10000' \
-  -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0' \
-  -H 'User-Language: zh_cn' \
-  -H 'X-Requested-With: XMLHttpRequest' \
-  -H 'sec-ch-ua: "Not;A=Brand";v="99", "Microsoft Edge";v="139", "Chromium";v="139"' \
-  -H 'sec-ch-ua-mobile: ?0' \
-  -H 'sec-ch-ua-platform: "Windows"' \
-  --data-raw '{"className":"erd.cloud.mpm.process.entity.MpmProcess","attrRawList":[{"attrName":"securityLabel","value":"PUBLIC"},{"attrName":"name","value":"1"},{"attrName":"parentVid","value":"VR:erd.cloud.mpm.process.entity.MpmProcess:1963795750197202944"}],"typeReference":"OR:erd.cloud.foundation.type.entity.TypeDefinition:1764838262922731521","folderRef":"OR:erd.cloud.foundation.core.folder.entity.Cabinet:1961628874755514369","containerRef":"OR:erd.cloud.foundation.core.container.entity.ScalableContainer:1961628874721959938"}'
-  '''
 
 URL_PATTERN = re.compile(
     r'^https?://'
@@ -92,11 +68,9 @@ def parse_curl(curl_command: str) -> Optional[CurlParseResult]:
             raise grouped_curl_options
         mixed_curl_options = mixin_curl_options(grouped_curl_options)  
         parse_result = fill_parse_data(mixed_curl_options)
-        print(parse_result['parsed_data'])
-        return CurlParseResult(parsed_data = parse_result['parsed_data'], unresolved_data = parse_result['unresolved_data'])
-    except Exception as e:
-        print(f"解析cURL 失败: {e}")
-        return None
+        return CurlParseResult(parsed_data = ParsedCurlData(**parse_result['parsed_data']), unresolved_data = parse_result['unresolved_data'])
+    except Exception:
+        raise Exception
     
 def parse_common(option_list: List[str]) -> Dict[str, str]:
     options = {}
@@ -183,15 +157,16 @@ def fill_parse_data(mixin_options: Dict[str, List[str]]) -> Dict:
             parsed_data[key] = value[0] if value else None
         elif key == 'headers':
             parsed_data[key] = parse_common(value)
+        elif key == 'request' and value:
+            parsed_data['request'] = value[0]
         else:
             if key not in curl_key_dict:
                 unresolved_data[key] = value
             else:
                 parsed_data[key] = True
-
     if "data" in parsed_data and "request" not in parsed_data:
         parsed_data['request'] = 'POST'
-    else:
+    elif "request" not in parsed_data:
         parsed_data['request'] = 'GET'
     return {"parsed_data": parsed_data, "unresolved_data": unresolved_data}
 
@@ -200,4 +175,13 @@ def is_valid_url(url: str) -> bool:
 
 
 
-parse_curl(sample_curl_command)
+# 仅在直接运行此文件时执行示例
+if __name__ == "__main__":
+    result = parse_curl("curl http://demo.rospar.com")
+    if result:
+        print(f"URL: {result.parsed_data.url}")
+        print(f"请求方法: {result.parsed_data.request}")
+        print(f"参数: {result.parsed_data.params}")
+        print(f"头信息: {result.parsed_data.headers}")
+        print(f"Cookies: {result.parsed_data.cookies}")
+        print(f"数据: {result.parsed_data.data}")
