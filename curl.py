@@ -1,8 +1,7 @@
-
 import re
 import argparse
 import shlex
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Union
 from urllib.parse import urlparse, parse_qs, urlunparse
 
 """
@@ -31,7 +30,7 @@ curl_options = {
     "user": ["--user", "-u"],
     "location": ["--location", "-L"],
     "verify": ["--insecure", "-k"],
-    "cookie": ["--cookie", "-b"],
+    "cookies": ["--cookie", "-b"],
     "cookie-jar": ["--cookie-jar", "-c"],
     "verbose": ["--verbose", "-v"],
     "output": ["--output", "-o"],
@@ -100,7 +99,7 @@ def parse_url(url: str) -> Dict[str, any]:
         "params": params
     }
 
-def group_curl_by_options(curl: str) -> list[list[str]] | Exception:
+def group_curl_by_options(curl: str) -> Union[List[List[str]], Exception]:
     try:
         curl = curl.strip()
         if curl.startswith('curl'):
@@ -124,7 +123,7 @@ def group_curl_by_options(curl: str) -> list[list[str]] | Exception:
     except Exception as e:
         return e
 def mixin_curl_options(curl_options:List[List[str]]) -> List[Tuple[str, List[str]]]:
-    ret = []
+    ret = {}
     for option in curl_options:
         if any(o.startswith('-') for o in option):
             key = None
@@ -134,20 +133,22 @@ def mixin_curl_options(curl_options:List[List[str]]) -> List[Tuple[str, List[str
                     key = formatted_curl_options[o]
                 else:
                     values.append(o)
-            ret.append((key, values))
+            if key in ret:
+                ret[key].extend(values)
+            else:
+                ret[key] = values
         else:
-            ret.append(('url', option))
+            ret['url'] = option
     return ret
 def fill_parse_data(mixin_options, default_data) -> Dict:
     parsed_data = {}
     unresolved_data = {}
-    for item in mixin_options:
-        key, value = item
+    for key, value in mixin_options.items():
         if key == 'url':
             parsed_data.update(parse_url(value[0]))
-        elif key == 'cookie':
+        elif key == 'cookies':
             parsed_data['cookies'] = parse_cookie(value)
-        elif len(value)>0:
+        elif len(value) > 0:
             parsed_data[key] = parse_common(value)
         else:
             parsed_data[key] = default_data.get(key, True)
