@@ -28,7 +28,7 @@
 ## 安装
 
 ```bash
-pip install curl-parser
+pip install easy-curl-parser
 ```
 
 ## 使用方法
@@ -37,19 +37,19 @@ pip install curl-parser
 
 ```bash
 # 直接解析 cURL 命令
-python curl_parser/cli.py 'curl -H "Accept: application/json" https://api.example.com'
+python -m curl_parser.cli 'curl -H "Accept: application/json" https://api.example.com'
 
 # 从文件读取 cURL 命令
-python curl_parser/cli.py -f curl_command.txt
+python -m curl_parser.cli -f curl_command.txt
 
 # 通过管道输入
-echo 'curl https://example.com' | python curl_parser/cli.py
+echo 'curl https://example.com' | python -m curl_parser.cli
 
 # JSON 格式输出
-python curl_parser/cli.py -j 'curl https://example.com'
+python -m curl_parser.cli -j 'curl https://example.com'
 
 # 输出到文件
-python curl_parser/cli.py -o result.txt 'curl https://example.com'
+python -m curl_parser.cli -o result.txt 'curl https://example.com'
 ```
 
 ### Python API

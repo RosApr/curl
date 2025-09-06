@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "easy-curl-parser"
-version = "0.1.0"
+version = "0.1.1"
 description = "一个用于解析cURL命令的Python库"
 readme = "README.md"
 authors = [
@@ -41,7 +41,7 @@ dev = []
 "Source" = "https://github.com/RosApr/curl-parser"
 
 [project.scripts]
-curl-parser = "cli:main"
+curl-parser = "curl_parser.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
