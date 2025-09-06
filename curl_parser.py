@@ -34,6 +34,22 @@ URL_PATTERN = re.compile(
     re.IGNORECASE
 )
 
+CN_MAPPING = {
+    "request": "请求方法",
+    "headers": "请求头",
+    "head": "仅返回头信息",
+    "data": "请求体数据",
+    "form": "表单数据",
+    "user": "用户名和密码",
+    "location": "自动重定向",
+    "verify": "忽略SSL证书验证",
+    "cookies": "请求cookie",
+    "cookie-jar": "保存响应cookie",
+    "verbose": "显示详细信息",
+    "output": "输出文件",
+    "url": "请求地址",
+    "params": "请求参数"
+}
 
 resolve_curl_options = {
     "request": ["--request", "-X"],
@@ -49,6 +65,19 @@ resolve_curl_options = {
     "verbose": ["--verbose", "-v"],
     "output": ["--output", "-o"],
 }
+
+def parse_curl(curl_command: str) -> Optional[CurlParseResult]:
+    try:
+        grouped_curl_options = group_curl_by_options(curl_command)
+        if isinstance(grouped_curl_options, Exception):
+            raise grouped_curl_options
+        mixed_curl_options = mixin_curl_options(grouped_curl_options)
+        parse_result = fill_parse_data(mixed_curl_options)
+        return CurlParseResult(parsed_data = ParsedCurlData(**parse_result['parsed_data']), unresolved_data = parse_result['unresolved_data'])
+    except Exception:
+        raise Exception
+
+
 def format_curl_options(options: Dict[str, List[str]]) -> Dict[str, str]:
     """
     格式化cURL 选项
@@ -61,17 +90,6 @@ def format_curl_options(options: Dict[str, List[str]]) -> Dict[str, str]:
 
 curl_key_dict = format_curl_options(resolve_curl_options)
 
-def parse_curl(curl_command: str) -> Optional[CurlParseResult]:
-    try:
-        grouped_curl_options = group_curl_by_options(curl_command)
-        if isinstance(grouped_curl_options, Exception):
-            raise grouped_curl_options
-        mixed_curl_options = mixin_curl_options(grouped_curl_options)  
-        parse_result = fill_parse_data(mixed_curl_options)
-        return CurlParseResult(parsed_data = ParsedCurlData(**parse_result['parsed_data']), unresolved_data = parse_result['unresolved_data'])
-    except Exception:
-        raise Exception
-    
 def parse_common(option_list: List[str]) -> Dict[str, str]:
     options = {}
     for option in option_list:
@@ -154,7 +172,7 @@ def fill_parse_data(mixin_options: Dict[str, List[str]]) -> Dict:
         elif key == 'cookies':
             parsed_data['cookies'] = parse_cookie(value)
         elif key == 'data':
-            parsed_data[key] = value[0] if value else None
+            parsed_data[key] = {k: v[0] for k, v in parse_qs(value[0]).items()} if value else None
         elif key == 'headers':
             parsed_data[key] = parse_common(value)
         elif key == 'request' and value:
@@ -173,15 +191,10 @@ def fill_parse_data(mixin_options: Dict[str, List[str]]) -> Dict:
 def is_valid_url(url: str) -> bool:
     return bool(re.match(URL_PATTERN, url))
 
-
-
-# 仅在直接运行此文件时执行示例
 if __name__ == "__main__":
-    result = parse_curl("curl http://demo.rospar.com")
+    sample_curl_command = '''
+  curl http://demo.rospar.com"'
+    '''
+    result = parse_curl(sample_curl_command)
     if result:
-        print(f"URL: {result.parsed_data.url}")
-        print(f"请求方法: {result.parsed_data.request}")
-        print(f"参数: {result.parsed_data.params}")
-        print(f"头信息: {result.parsed_data.headers}")
-        print(f"Cookies: {result.parsed_data.cookies}")
-        print(f"数据: {result.parsed_data.data}")
+        print(f"{result}")
