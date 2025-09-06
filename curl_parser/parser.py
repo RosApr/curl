@@ -131,15 +131,12 @@ def group_curl_by_options(curl_command: str) -> Optional[List[List[str]]]:
         token_length = len(tokens)
         while current_index < token_length:
             token = tokens[current_index]
-            next_index = current_index + 1
-            while next_index < token_length:
-                next_token = tokens[next_index]
-                if next_token.startswith('-') and next_token == token or not next_token.startswith('-'):
-                    next_index += 1
-                else:
-                    break
-            grouped_options.append(list(set(tokens[current_index:next_index])))
-            current_index = next_index
+            if token.startswith('-'):
+                grouped_options.append(tokens[current_index:current_index+2])
+                current_index += 2
+            else:
+                grouped_options.append(tokens[current_index:current_index+1])
+                current_index += 1
         return grouped_options
     except Exception:
         raise Exception
