@@ -3,7 +3,7 @@ import sys
 import json
 import argparse
 from dataclasses import asdict
-from curl_parser import parse_curl, CN_MAPPING
+from parser import parse_curl, CN_MAPPING
 
 def main():
     parser = argparse.ArgumentParser(description="解析cURL命令并输出结构化数据")
