@@ -3,7 +3,7 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "curl-parser"
+name = "easy-curl-parser"
 version = "0.1.0"
 description = "一个用于解析cURL命令的Python库"
 readme = "README.md"
@@ -46,4 +46,4 @@ curl-parser = "cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["curl_parser*"]
-excludes = ["test*"]
+exclude = ["test*"]
