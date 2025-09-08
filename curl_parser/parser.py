@@ -4,7 +4,7 @@ import re
 import shlex
 from typing import Dict, List, Any, Optional
 from urllib.parse import urlparse, parse_qs, urlunparse
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 @dataclass
 class ParsedCurlData:
@@ -15,10 +15,22 @@ class ParsedCurlData:
     data: Optional[str] = None
     request: str = "GET"
 
+    def to_dict(self, exclude_none = True) -> Dict[str, Any]:
+        d = asdict(self)
+        if exclude_none:
+            return {k: v for k, v in d.items() if v is not None}
+        return d
+
+
 @dataclass
 class CurlParseResult:
     parsed_data: ParsedCurlData
     unresolved_data: Dict[str, Any]
+    def to_dict(self, exclude_none = True) -> Dict[str, Any]:
+        return {
+            "parsed_data": self.parsed_data.to_dict(exclude_none),
+            "unresolved_data": self.unresolved_data if not exclude_none else {k: v for k, v in self.unresolved_data.items() if v is not None}
+        }
 
 """
 cURL 命令解析器
@@ -188,10 +200,29 @@ def fill_parse_data(mixin_options: Dict[str, List[str]]) -> Dict:
 def is_valid_url(url: str) -> bool:
     return bool(re.match(URL_PATTERN, url))
 
+def format_parser_result_to_str(parsed_result: Dict[str, Any]):
+    output = ''
+    for key, value in parsed_result['parsed_data'].items():
+        label = CN_MAPPING[key]
+        output += f"{label}:\n"
+        if isinstance(value, dict):
+            for k, v in value.items():
+                output += f"  {k}: {v}\n"
+        else:
+            output += f"  {value}\n"
+    for key, value in parsed_result['unresolved_data'].items():
+        output += f"{key}:\n"
+        if isinstance(value, dict):
+            for k, v in value.items():
+                output += f"  {k}: {v}\n"
+        else:
+            output += f"  {value}\n"
+    return output
+
 if __name__ == "__main__":
     sample_curl_command = '''
   curl http://demo.rospar.com"'
     '''
     result = parse_curl(sample_curl_command)
     if result:
-        print(f"{result}")
+        print(f"{format_parser_result_to_str(result.to_dict())}")

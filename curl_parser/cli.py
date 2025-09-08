@@ -2,11 +2,10 @@
 import sys
 import json
 import argparse
-from dataclasses import asdict
 try:
-    from .parser import parse_curl, CN_MAPPING
+    from .parser import parse_curl, format_parser_result_to_str
 except ImportError:
-    from parser import parse_curl, CN_MAPPING
+    from parser import parse_curl, format_parser_result_to_str
 
 
 def main():
@@ -40,30 +39,11 @@ def main():
     if not parse_result:
         print("解析cURL命令失败", file=sys.stderr)
         sys.exit(1)
-    output = ''
-    output_dict = {
-        'parsed_data': asdict(parse_result.parsed_data),
-        'unresolved_data': parse_result.unresolved_data
-    }
-
+    output_dict = parse_result.to_dict()
     if args.json:
         output = json.dumps(output_dict, ensure_ascii=False, indent=2)
     else:
-        for key, value in output_dict['parsed_data'].items():
-            label = CN_MAPPING[key]
-            output += f"{label}:\n"
-            if isinstance(value, dict):
-                for k, v in value.items():
-                    output += f"  {k}: {v}\n"
-            else:
-                output += f"  {value}\n"
-        for key, value in output_dict['unresolved_data'].items():
-            output += f"{key}:\n"
-            if isinstance(value, dict):
-                for k, v in value.items():
-                    output += f"  {k}: {v}\n"
-            else:
-                output += f"  {value}\n"
+        output = format_parser_result_to_str(output_dict)
 
     if args.output:
         try:

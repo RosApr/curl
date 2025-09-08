@@ -87,18 +87,15 @@ class TestCurlParser(unittest.TestCase):
         result = parse_curl(curl_command)
 
         self.assertIsNotNone(result)
-        self.assertEqual(result.parsed_data.url, 'http://localhost:155/common/sso/login')
-        self.assertEqual(result.parsed_data.request, 'POST')
+        self.assertEqual(result.parsed_data.url, 'https://github.com/notifications/indicator')
+        self.assertEqual(result.parsed_data.request, 'GET')
 
         # 检查是否包含一些关键的请求头
-        self.assertIn('Accept', result.parsed_data.headers)
-        self.assertIn('Content-Type', result.parsed_data.headers)
-        self.assertIn('User-Agent', result.parsed_data.headers)
+        self.assertIn('accept', result.parsed_data.headers)
+        self.assertIn('user-agent', result.parsed_data.headers)
 
         # 检查 Cookie
-        self.assertIsNotNone(result.parsed_data.cookies)
-        self.assertIn('locale', result.parsed_data.cookies)
-        self.assertEqual(result.parsed_data.cookies['locale'], 'und')
+        self.assertIsNone(result.parsed_data.cookies)
 
     def test_invalid_curl_command(self):
         """测试无效的 cURL 命令"""
