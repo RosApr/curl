@@ -8,8 +8,9 @@
       "name": "Python 调试程序",
       "type": "debugpy",
       "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "args": ["-f", "./test/test_curl.txt", "--json", "-o", "./test/ret.txt"],
+      "module": "curl_parser.cli",
     }
   ]
 }

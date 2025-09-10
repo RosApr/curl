@@ -1,4 +1,3 @@
-
 import unittest
 import os
 from curl_parser import parse_curl
