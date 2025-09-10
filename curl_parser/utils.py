@@ -17,9 +17,8 @@ def extract_curl_commands(file_content: str)-> List[str]:
             current_cmd = [stripped_line]
         else:
             current_cmd.append(stripped_line)
-        
-        if current_cmd:
-            commands.append(' '.join(current_cmd))
+    if current_cmd:
+        commands.append(' '.join(current_cmd))
     return commands
 
 if __name__ == '__main__':
