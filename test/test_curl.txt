@@ -37,6 +37,10 @@ curl 'https://github.com/notifications/indicator' \
 
   curl 'https://github.com/notifications/indicator' 
 
+  'https://github.com/notifications/indicator'
+  
+  'github.com/notifications/indicator' 
+
   curl 'https://github.com/notifications/indicator' 
 
   curl 'https://github.com/notifications/indicator' 

@@ -4,9 +4,9 @@ import json
 import argparse
 from .utils import extract_curl_commands
 try:
-    from .parser import parse_curl, format_parser_result_to_str
+    from .parser import parse_curl, format_parser_result_to_str, format_error_to_str, ParsedCurlData, CurlParseException
 except ImportError:
-    from parser import parse_curl, format_parser_result_to_str
+    from parser import parse_curl, format_parser_result_to_str, format_error_to_str, ParsedCurlData, CurlParseException
 
 
 def main():
@@ -34,19 +34,20 @@ def main():
     else:
         parser.print_help()
         sys.exit(1)
-    if isinstance(curl_command, list):
-        parse_result = list(map(lambda x : parse_curl(x), curl_command))
-    else:
-        parse_result = list(parse_curl(curl_command))
+    curl_command = list(curl_command) if isinstance(curl_command, str) else curl_command
+    parse_result = []
+    for cmd in curl_command:
+        result = parse_curl(cmd)
+        parse_result.append(result)
 
-    if not parse_result:
+    if any(isinstance(r, CurlParseException) for r in parse_result) and len(parse_result) == 1:
         print("解析cURL命令失败", file=sys.stderr)
         sys.exit(1)
     output_dict = list(map(lambda x : x.to_dict(), parse_result))
     if args.json:
         output = json.dumps(output_dict, ensure_ascii=False, indent=2)
     else:
-        output = list(map(lambda x : format_parser_result_to_str(x), output_dict))
+        output = list(map(lambda x : format_error_to_str(x) if isinstance(x, CurlParseException) else format_parser_result_to_str(x) , output_dict))
 
     if args.output:
         try:
