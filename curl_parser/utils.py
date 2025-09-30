@@ -1,6 +1,6 @@
 from typing import List
 
-def extract_curl_commands(file_content: str)-> List[str]:
+def extract_curl_commands(file_content: str) -> List[str]:
     """从文件内容中提取所有cURL命令"""
     commands = []
     current_cmd = []

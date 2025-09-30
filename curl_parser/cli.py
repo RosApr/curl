@@ -8,7 +8,6 @@ try:
 except ImportError:
     from parser import parse_curl, format_parser_result_to_str
 
-
 def main():
     parser = argparse.ArgumentParser(description="解析cURL命令并输出结构化数据")
     parser.add_argument('curl_command', nargs="?", help="要解析的cURL命令")
