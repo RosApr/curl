@@ -32,6 +32,14 @@ class CurlParseResult:
             "unresolved_data": self.unresolved_data if not exclude_none else {k: v for k, v in self.unresolved_data.items() if v is not None}
         }
 
+@dataclass
+class CurlParseException(Exception):
+    message: str
+    error: Dict[str, str] = None
+    def to_dict(self) -> Dict[str, str]:
+        return asdict(self)
+
+
 """
 cURL 命令解析器
 """
@@ -87,7 +95,7 @@ def parse_curl(curl_command: str) -> Optional[CurlParseResult]:
         parse_result = fill_parse_data(mixed_curl_options)
         return CurlParseResult(parsed_data = ParsedCurlData(**parse_result['parsed_data']), unresolved_data = parse_result['unresolved_data'])
     except Exception:
-        raise Exception
+        return CurlParseException(message = "无法解析该cURL命令", error = {'url': curl_command, 'error': str(Exception)})
 
 
 def format_curl_options(options: Dict[str, List[str]]) -> Dict[str, str]:
@@ -218,6 +226,10 @@ def format_parser_result_to_str(parsed_result: Dict[str, Any]):
         else:
             output += f"  {value}\n"
     return output
+def format_error_to_str(dict):
+    output = ''
+    for key, value in dict.items():
+        output += f"{key}: {value}\n"
 
 if __name__ == "__main__":
     sample_curl_command = '''

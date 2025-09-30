@@ -22,8 +22,8 @@ def extract_curl_commands(file_content: str) -> List[str]:
     return commands
 
 if __name__ == '__main__':
-    with open('./test/test_curl.txt', 'r', encoding='utf-8') as f:
-        ret = extract_curl_commands(f.read())
-        with open('./test/ret.txt', 'w', encoding='utf-8') as fw:
-            for cmd in ret:
-                fw.write(cmd + '\n\n')
+    with open('./test/test_curl.txt', 'r', encoding='utf-8') as curlFile, \
+        open('./test/ret.txt', 'w', encoding='utf-8') as targetFile:
+        ret = extract_curl_commands(curlFile.read())
+        for cmd in ret:
+            targetFile.write(cmd + '\n\n')

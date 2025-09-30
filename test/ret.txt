@@ -52,49 +52,6 @@
   {
     "parsed_data": {
       "url": "https://github.com/notifications/indicator",
-      "headers": {
-        "accept": "application/json",
-        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-        "cache-control": "no-cache",
-        "pragma": "no-cache",
-        "priority": "u=1, i",
-        "referer": "https://github.com/RosApr/curl-parser",
-        "sec-ch-ua": "\"Not;A=Brand\";v=\"99\", \"Microsoft Edge\";v=\"139\", \"Chromium\";v=\"139\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0",
-        "x-fetch-nonce": "v2:6a29c23a-da59-f0ce-4dca-1d631d218172",
-        "x-github-client-version": "82588848b187a5a7487d84256afbed1e318c0371",
-        "x-requested-with": "XMLHttpRequest"
-      },
-      "request": "GET"
-    },
-    "unresolved_data": {}
-  },
-  {
-    "parsed_data": {
-      "url": "https://github.com/notifications/indicator",
-      "headers": {
-        "accept": "application/json",
-        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-        "cache-control": "no-cache",
-        "pragma": "no-cache",
-        "priority": "u=1, i",
-        "referer": "https://github.com/RosApr/curl-parser",
-        "sec-ch-ua": "\"Not;A=Brand\";v=\"99\", \"Microsoft Edge\";v=\"139\", \"Chromium\";v=\"139\"",
-        "sec-ch-ua-mobile": "?0",
-        "sec-ch-ua-platform": "\"Windows\"",
-        "sec-fetch-dest": "empty",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-site": "same-origin",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0",
-        "x-fetch-nonce": "v2:6a29c23a-da59-f0ce-4dca-1d631d218172",
-        "x-github-client-version": "82588848b187a5a7487d84256afbed1e318c0371",
-        "x-requested-with": "XMLHttpRequest"
-      },
       "request": "GET"
     },
     "unresolved_data": {}
@@ -107,25 +64,11 @@
     "unresolved_data": {}
   },
   {
-    "parsed_data": {
-      "url": "https://github.com/notifications/indicator",
-      "request": "GET"
-    },
-    "unresolved_data": {}
-  },
-  {
-    "parsed_data": {
-      "url": "https://github.com/notifications/indicator",
-      "request": "GET"
-    },
-    "unresolved_data": {}
-  },
-  {
-    "parsed_data": {
-      "url": "https://github.com/notifications/indicator",
-      "request": "GET"
-    },
-    "unresolved_data": {}
+    "message": "无法解析该cURL命令",
+    "error": {
+      "url": "'github.com/notifications/indicator'",
+      "error": "<class 'Exception'>"
+    }
   },
   {
     "parsed_data": {
